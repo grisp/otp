@@ -403,6 +403,7 @@ erts_sys_is_area_readable(char *start, char *stop) {
 static ERTS_INLINE int
 prepare_crash_dump(int secs)
 {
+#ifndef __rtems__
 #define NUFBUF (3)
     int i;
     char env[21]; /* enough to hold any 64-bit integer */
@@ -464,6 +465,9 @@ prepare_crash_dump(int secs)
     UnUseTmpHeapNoproc(NUFBUF);
 #undef NUFBUF
     return has_heart;
+#else  /* __rtems__ */
+    return 0;
+#endif /* __rtems__ */
 }
 
 int erts_sys_prepare_crash_dump(int secs)
