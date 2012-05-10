@@ -86,12 +86,30 @@ chmod 755 erl
 
 cd "$ERL_ROOT/bin"
 
-cp -p "$ERL_ROOT/erts-%I_VSN%/bin/erl" .
-cp -p "$ERL_ROOT/erts-%I_VSN%/bin/erlc" .
-cp -p "$ERL_ROOT/erts-%I_VSN%/bin/dialyzer" .
-cp -p "$ERL_ROOT/erts-%I_VSN%/bin/typer" .
-cp -p "$ERL_ROOT/erts-%I_VSN%/bin/ct_run" .
-cp -p "$ERL_ROOT/erts-%I_VSN%/bin/escript" .
+if [ -e "$ERL_ROOT/erts-%I_VSN%/bin/erl" ]
+then
+    cp -p "$ERL_ROOT/erts-%I_VSN%/bin/erl" .
+fi
+if [ -e "$ERL_ROOT/erts-%I_VSN%/bin/erlc" ]
+then
+    cp -p "$ERL_ROOT/erts-%I_VSN%/bin/erlc" .
+fi
+if [ -e "$ERL_ROOT/erts-%I_VSN%/bin/dialyzer" ]
+then
+    cp -p "$ERL_ROOT/erts-%I_VSN%/bin/dialyzer" .
+fi
+if [ -e "$ERL_ROOT/erts-%I_VSN%/bin/typer" ]
+then
+    cp -p "$ERL_ROOT/erts-%I_VSN%/bin/typer" .
+fi
+if [ -e "$ERL_ROOT/erts-%I_VSN%/bin/ct_run" ]
+then
+    cp -p "$ERL_ROOT/erts-%I_VSN%/bin/ct_run" .
+fi
+if [ -e "$ERL_ROOT/erts-%I_VSN%/bin/escript" ]
+then
+    cp -p "$ERL_ROOT/erts-%I_VSN%/bin/escript" .
+fi
 
 #
 # Set a soft link to epmd
@@ -105,9 +123,19 @@ fi
 
 ln -s ../erts-%I_VSN%/bin/epmd epmd
 
-cp -p "$ERL_ROOT/erts-%I_VSN%/bin/run_erl" .
-cp -p "$ERL_ROOT/erts-%I_VSN%/bin/to_erl" .
-cp -p "$ERL_ROOT/erts-%I_VSN%/bin/start" .
+if [ -e "$ERL_ROOT/erts-%I_VSN%/bin/run_erl" ]
+then
+    cp -p "$ERL_ROOT/erts-%I_VSN%/bin/run_erl" .
+fi
+if [ -e "$ERL_ROOT/erts-%I_VSN%/bin/to_erl" ]
+then
+    cp -p "$ERL_ROOT/erts-%I_VSN%/bin/to_erl" .
+fi
+if [ -e "$ERL_ROOT/erts-%I_VSN%/bin/start" ]
+then
+    cp -p "$ERL_ROOT/erts-%I_VSN%/bin/start" .
+fi
+
 sed -e "s;%EMU%;%EMULATOR%%EMULATOR_NUMBER%;" "$ERL_ROOT/erts-%I_VSN%/bin/start_erl.src" > start_erl
 chmod 755 start_erl
 echo ""
