@@ -75,11 +75,19 @@ init(NetArgs) ->
 		[{EpmdMod,{EpmdMod,start_link,[]},
 		  permanent,2000,worker,[EpmdMod]}]
 	end,
+    EpmdSrv = 
+	case init:get_argument(internal_epmd) of
+	    {ok,[[EpmdSrvMod]]} ->
+		Esm = list_to_atom(EpmdSrvMod),
+		Esm:get_childspecs();
+	    _ ->
+		[]
+	end,
     Auth = {auth,{auth,start_link,[]},permanent,2000,worker,[auth]},
     Kernel = {net_kernel,{net_kernel,start_link,NetArgs},
 	      permanent,2000,worker,[net_kernel]},
     EarlySpecs = net_kernel:protocol_childspecs(),
-    {ok,{{one_for_all,0,1}, EarlySpecs ++ Epmd ++ [Auth,Kernel]}}.
+    {ok,{{one_for_all,0,1}, EarlySpecs ++ EpmdSrv ++ Epmd ++ [Auth,Kernel]}}.
 
 do_start_link([{Arg,Flag}|T]) ->
     case init:get_argument(Arg) of
