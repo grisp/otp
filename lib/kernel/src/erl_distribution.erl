@@ -71,7 +71,7 @@ start_link(Opts) ->
     supervisor:start_link({local,net_sup}, ?MODULE, [Opts]).
 
 init(NetArgs) ->
-    Epmd = 
+    Epmd =
 	case init:get_argument(no_epmd) of
 	    {ok, [[]]} ->
 		[];
@@ -84,6 +84,13 @@ init(NetArgs) ->
                    type => worker,
                    modules => [EpmdMod]}]
 	end,
+    EpmdSrv = case init:get_argument(internal_epmd) of
+        {ok, [[EpmdSrvMod]]} ->
+            Esm = list_to_atom(EpmdSrvMod),
+            Esm:get_childspecs();
+        _ ->
+            []
+    end,
     Auth = #{id => auth,
              start => {auth,start_link,[]},
              restart => permanent,
@@ -100,7 +107,7 @@ init(NetArgs) ->
     SupFlags = #{strategy => one_for_all,
                  intensity => 0,
                  period => 1},
-    {ok, {SupFlags, EarlySpecs ++ Epmd ++ [Auth,Kernel]}}.
+    {ok, {SupFlags, EarlySpecs ++ EpmdSrv ++ Epmd ++ [Auth,Kernel]}}.
 
 do_start_link([{Arg,Flag}|T]) ->
     case init:get_argument(Arg) of
