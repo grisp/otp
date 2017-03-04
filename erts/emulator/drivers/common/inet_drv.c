@@ -4332,7 +4332,7 @@ static char *inet_set_faddress(int family, inet_address* dst,
 	    }
 	    sys_memzero((char*)dst, sizeof(struct sockaddr_in));
 #ifndef NO_SA_LEN
-	    dst->sai.sin_len         = sizeof(struct sockaddr_in6);
+	    dst->sai.sin_len         = sizeof(struct sockaddr_in);
 #endif
 	    dst->sai.sin_family      = family;
 	    dst->sai.sin_port        = sock_htons(port);
