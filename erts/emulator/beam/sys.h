@@ -176,7 +176,7 @@ typedef ERTS_SYS_FD_TYPE ErtsSysFdType;
 #if (defined(__APPLE__) && defined(__MACH__)) || defined(__DARWIN__)
 #  define ERTS_WRITE_UNLIKELY(X) X __attribute__ ((section ("__DATA,ERTS_LOW_WRITE") ))
 #else
-#  define ERTS_WRITE_UNLIKELY(X) X __attribute__ ((section ("ERTS_LOW_WRITE") ))
+#  define ERTS_WRITE_UNLIKELY(X) X __attribute__ ((section (".data.read_mostly") ))
 #endif
 #else
 #  define ERTS_WRITE_UNLIKELY(X) X
