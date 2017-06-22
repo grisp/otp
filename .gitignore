@@ -52,6 +52,10 @@ x86_64-unknown-freebsd[0-9]*.[0-9]*
 x86_64-unknown-openbsd[0-9]*.[0-9]*
 powerpc-unknown-linux-gnu
 aarch64-unknown-linux-gnu
+arm-unknown-rtems[0-9]*.[0-9]*
+
+# Compilation/linking artifacts
+linker.map
 
 # Mac OS X
 a.out.dSYM/
