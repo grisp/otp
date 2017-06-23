@@ -53,6 +53,7 @@ x86_64-unknown-openbsd[0-9]*.[0-9]*
 powerpc-unknown-linux-gnu
 aarch64-unknown-linux-gnu
 arm-unknown-rtems[0-9]*.[0-9]*
+powerpc-unknown-rtems[0-9]*.[0-9]*
 
 # Compilation/linking artifacts
 linker.map
