@@ -49,6 +49,7 @@ aarch64-unknown-linux-gnu
 i386-elf-ose
 powerpc-unknown-ose
 arm-unknown-rtems[0-9]*.[0-9]*
+powerpc-unknown-rtems[0-9]*.[0-9]*
 
 # Compilation/linking artifacts
 linker.map
