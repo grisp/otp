@@ -3022,7 +3022,7 @@ void erts_init_io(int port_tab_size,
 
     init_driver(&fd_driver, &fd_driver_entry, NULL);
     init_driver(&spawn_driver, &spawn_driver_entry, NULL);
-#ifndef __WIN32__
+#if !(defined(__WIN32__) || defined(__rtems__))
     init_driver(&forker_driver, &forker_driver_entry, NULL);
 #endif
     erts_init_static_drivers();
