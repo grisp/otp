@@ -474,7 +474,9 @@ endif
 
 UNIX_ONLY_BUILDS =
 ifeq ($(ERLANG_OSTYPE), unix)
+ifneq ($(findstring rtems, $(TARGET)), rtems)
 UNIX_ONLY_BUILDS =	$(BINDIR)/$(CS_EXECUTABLE)
+endif
 endif
 
 .PHONY: all
@@ -544,7 +546,9 @@ ifeq ($(RELEASE_LIBBEAM),yes)
 	$(INSTALL_PROGRAM) $(BINDIR)/$(EMULATOR_LIB) "$(RELSYSDIR)/lib"
 endif
 ifeq ($(ERLANG_OSTYPE), unix)
+ifneq ($(findstring rtems, $(TARGET)), rtems)
 	$(INSTALL_PROGRAM) $(BINDIR)/$(CS_EXECUTABLE) "$(RELSYSDIR)/bin"
+endif
 endif
 endif
 
