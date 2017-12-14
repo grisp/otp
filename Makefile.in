@@ -855,7 +855,12 @@ $(TEST_DIRS):
 #
 # Order is important here, don't change it!
 #
+
+ifeq ($(findstring rtems,$(TARGET)),rtems)
+INST_DEP += sys.config install.dirs install.emulator install.libs install.Install install.otp_version install.config
+else
 INST_DEP += sys.config install.dirs install.emulator install.libs install.Install install.otp_version install.config install.bin
+endif
 
 install: $(INST_DEP)
 
