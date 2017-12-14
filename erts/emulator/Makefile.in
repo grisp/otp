@@ -437,7 +437,11 @@ endif
 # ----------------------------------------------------------------------
 
 ifeq ($(ERLANG_OSTYPE), unix)
+ifeq ($(findstring rtems, $(TARGET)), rtems)
+UNIX_ONLY_BUILDS =
+else
 UNIX_ONLY_BUILDS =	$(BINDIR)/$(CS_EXECUTABLE)
+endif
 else
 UNIX_ONLY_BUILDS =
 endif
@@ -506,7 +510,9 @@ release_spec: all
 	$(INSTALL_DATA) $(RELEASE_INCLUDES) "$(RELSYSDIR)/include"
 	$(INSTALL_PROGRAM) $(BINDIR)/$(EMULATOR_EXECUTABLE) "$(RELSYSDIR)/bin"
 ifeq ($(ERLANG_OSTYPE), unix)
+ifneq ($(findstring rtems, $(TARGET)), rtems)
 	$(INSTALL_PROGRAM) $(BINDIR)/$(CS_EXECUTABLE) "$(RELSYSDIR)/bin"
+endif
 endif
 endif
 
