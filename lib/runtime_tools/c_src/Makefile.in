@@ -39,7 +39,11 @@ SHELL = /bin/sh
 LIBS = $(DED_LIBS) @LIBS@
 LDFLAGS += $(DED_LDFLAGS)
 
+ifeq ($(findstring rtems,$(TARGET)),rtems)
+TRACE_LIBNAME =
+else
 TRACE_LIBNAME = dyntrace trace_file_drv trace_ip_drv
+endif
 
 SYSINCLUDE = $(DED_SYS_INCLUDE)
 
@@ -108,9 +112,13 @@ docs:
 # ----------------------------------------------------
 include $(ERL_TOP)/make/otp_release_targets.mk
 
+ifeq ($(findstring rtems,$(TARGET)),rtems)
+release_spec: 
+else
 release_spec: opt
 	$(INSTALL_DIR) "$(RELSYSDIR)/priv/lib"
 	$(INSTALL_PROGRAM) $(TRACE_LIBS) "$(RELSYSDIR)/priv/lib"
+endif
 
 release_docs_spec:
 
