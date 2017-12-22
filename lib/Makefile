@@ -72,15 +72,6 @@ else
   endif
 endif
 
-# FIXME make these configurable in the xconf files
-ifeq ($(findstring rtems,$(TARGET)),rtems)
-  SKIP_APPLICATIONS := edoc erl_docgen snmp otp_mibs erl_interface asn1 \
-        jinterface wx debugger reltool gs ic crypto orber os_mon public_key \
-        ssl observer odbc diameter cosTransactions cosEvent cosTime \
-        cosNotification cosProperty cosFileTransfer cosEventDomain \
-        et megaco ssh typer percept eldap dialyzer hipe
-endif
-
 # Any applications listed in SKIP-APPLICATIONS should be skipped
 SKIP_FILE := $(wildcard SKIP-APPLICATIONS)
 SKIP_APPLICATIONS += $(if $(SKIP_FILE),$(shell cat $(SKIP_FILE)))
