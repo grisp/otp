@@ -121,10 +121,18 @@ CRYPTO_STATIC_OBJS = $(patsubst $(OBJDIR)/%$(TYPEMARKER).o,$(OBJDIR)/%_static$(T
 
 NIF_ARCHIVE = $(LIBDIR)/crypto$(TYPEMARKER).a
 
+NIF_LIB =
+CALLBACK_LIB =
+ifneq ($(findstring rtems, $(TARGET)), rtems)
 NIF_LIB = $(LIBDIR)/crypto$(TYPEMARKER).@DED_EXT@
 CALLBACK_LIB = $(LIBDIR)/crypto_callback$(TYPEMARKER).@DED_EXT@
+endif
 
+ifneq ($(findstring rtems, $(TARGET)), rtems)
 DISABLE_OTP_TEST_ENGINE = @DISABLE_OTP_TEST_ENGINE@
+else
+DISABLE_OTP_TEST_ENGINE = yes
+endif
 ifeq ($(DISABLE_OTP_TEST_ENGINE),yes)
 TEST_ENGINE_LIB =
 TEST_ENGINE_OBJS =
@@ -266,7 +274,9 @@ include $(ERL_TOP)/make/otp_release_targets.mk
 
 release_spec: opt
 	$(INSTALL_DIR) "$(RELSYSDIR)/priv/lib"
+ifneq ($(findstring rtems, $(TARGET)), rtems)
 	$(INSTALL_PROGRAM) $(NIF_LIB) "$(RELSYSDIR)/priv/lib"
+endif
 ifeq ($(DYNAMIC_OR_WIN_CRYPTO_LIB),yes)
 	$(INSTALL_PROGRAM) $(CALLBACK_LIB) "$(RELSYSDIR)/priv/lib"
 endif
