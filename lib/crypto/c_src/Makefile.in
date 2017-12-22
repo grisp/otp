@@ -118,9 +118,11 @@ NIF_ARCHIVE = $(LIBDIR)/crypto$(TYPEMARKER).a
 
 TEST_ENGINE_OBJS = $(OBJDIR)/otp_test_engine$(TYPEMARKER).o
 
+ifneq ($(findstring rtems,$(TARGET)),rtems)
 NIF_LIB = $(LIBDIR)/crypto$(TYPEMARKER).@DED_EXT@
 CALLBACK_LIB = $(LIBDIR)/crypto_callback$(TYPEMARKER).@DED_EXT@
 TEST_ENGINE_LIB = $(LIBDIR)/otp_test_engine$(TYPEMARKER).@DED_EXT@
+endif
 
 DYNAMIC_CRYPTO_LIB=@SSL_DYNAMIC_ONLY@
 # Wierd that we compile as if dynamically linking when statically
@@ -248,11 +250,13 @@ include $(ERL_TOP)/make/otp_release_targets.mk
 
 release_spec: opt
 	$(INSTALL_DIR) "$(RELSYSDIR)/priv/lib"
+ifneq ($(findstring rtems,$(TARGET)),rtems)
 	$(INSTALL_PROGRAM) $(NIF_LIB) "$(RELSYSDIR)/priv/lib"
 ifeq ($(DYNAMIC_OR_WIN_CRYPTO_LIB),yes)
 	$(INSTALL_PROGRAM) $(CALLBACK_LIB) "$(RELSYSDIR)/priv/lib"
 endif
 	$(INSTALL_PROGRAM) $(TEST_ENGINE_LIB) "$(RELSYSDIR)/priv/lib"
+endif
 
 release_docs_spec:
 
