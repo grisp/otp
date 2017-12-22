@@ -107,9 +107,17 @@ NIF_ARCHIVE = $(LIBDIR)/crypto$(TYPEMARKER).a
 
 TEST_ENGINE_OBJS = $(OBJDIR)/otp_test_engine$(TYPEMARKER).o
 
+ifneq ($(findstring rtems,$(TARGET)),rtems)
+ifeq ($(findstring win32,$(TARGET)), win32)
 NIF_LIB = $(LIBDIR)/crypto$(TYPEMARKER).@DED_EXT@
 CALLBACK_LIB = $(LIBDIR)/crypto_callback$(TYPEMARKER).@DED_EXT@
 TEST_ENGINE_LIB = $(LIBDIR)/otp_test_engine$(TYPEMARKER).@DED_EXT@
+else
+NIF_LIB = $(LIBDIR)/crypto$(TYPEMARKER).so
+CALLBACK_LIB = $(LIBDIR)/crypto_callback$(TYPEMARKER).so
+TEST_ENGINE_LIB = $(LIBDIR)/otp_test_engine$(TYPEMARKER).so
+endif
+endif
 
 DYNAMIC_CRYPTO_LIB=@SSL_DYNAMIC_ONLY@
 
@@ -226,6 +234,7 @@ release_spec: opt
 	$(INSTALL_DIR) "$(RELSYSDIR)/priv/obj"
 	$(INSTALL_DIR) "$(RELSYSDIR)/priv/lib"
 	$(INSTALL_DATA) $(NIF_MAKEFILE) "$(RELSYSDIR)/priv/obj"
+ifneq ($(findstring rtems,$(TARGET)),rtems)
 	$(INSTALL_PROGRAM) $(CRYPTO_OBJS) "$(RELSYSDIR)/priv/obj"
 	$(INSTALL_PROGRAM) $(NIF_LIB) "$(RELSYSDIR)/priv/lib"
 ifeq ($(DYNAMIC_CRYPTO_LIB),yes)
@@ -234,6 +243,7 @@ ifeq ($(DYNAMIC_CRYPTO_LIB),yes)
 endif
 	$(INSTALL_PROGRAM) $(TEST_ENGINE_OBJS) "$(RELSYSDIR)/priv/obj"
 	$(INSTALL_PROGRAM) $(TEST_ENGINE_LIB) "$(RELSYSDIR)/priv/lib"
+endif
 
 release_docs_spec:
 
