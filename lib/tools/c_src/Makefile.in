@@ -94,9 +94,11 @@ DRIVERS=
 #
 
 
+ifneq ($(findstring rtems, $(TARGET)), rtems)
 ifneq ($(strip $(ETHR_LIB_NAME)),)
 # Need ethread package for emem
 PROGS += $(BIN_DIR)/emem$(TYPEMARKER)@EXEEXT@
+endif
 endif
 
 EMEM_OBJ_DIR=$(OBJ_DIR)/emem
