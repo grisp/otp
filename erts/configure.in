@@ -456,7 +456,7 @@ dnl
 
 extra_flags="-I${ERL_TOP}/erts/$host $OTP_EXTRA_FLAGS"
 CFLAGS="$CFLAGS $extra_flags"
-DEBUG_CFLAGS="-g $CPPFLAGS $extra_flags $DEBUG_CFLAGS"
+DEBUG_CFLAGS="-g $CFLAGS $extra_flags $DEBUG_CFLAGS"
 DEBUG_FLAGS=-g
 
 dnl
