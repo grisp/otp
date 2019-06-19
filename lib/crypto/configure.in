@@ -57,6 +57,8 @@ ERL_DED
 dnl
 dnl SSL, SSH and CRYPTO need the OpenSSL libraries
 dnl
+dnl TODO: Update comments
+dnl
 dnl Check flags --with-ssl, --without-ssl --with-ssl=PATH.
 dnl If no option is given or --with-ssl is set without a path then we
 dnl search for OpenSSL libraries and header files in the standard locations. 
@@ -146,12 +148,17 @@ AS_HELP_STRING([--with-ssl=PATH], [specify location of OpenSSL include and lib])
 AS_HELP_STRING([--with-ssl], [use SSL (default)])
 AS_HELP_STRING([--without-ssl], [don't use SSL]))
 
+dnl TODO: Add checks regarding conflicts between --with-ssl and --with-ssl-lib
+AC_ARG_WITH(ssl-lib,
+AS_HELP_STRING([--with-ssl-lib=PATH], [location of the library containing OpenSSL, if not standard]))
+
+dnl TODO: Add checks related to --with-ssl-lib, re-enable checks related to --with-ssl
 AC_ARG_WITH(ssl-incl,
 AS_HELP_STRING([--with-ssl-incl=PATH], [location of OpenSSL include dir, if different than specified by --with-ssl=PATH]),
 [
-case X$with_ssl in
-    X | Xyes | Xno) AC_MSG_ERROR([--with-ssl-incl=PATH set without --with-ssl=PATH]);;
-esac
+dnl case X$with_ssl in
+dnl     X | Xyes | Xno) AC_MSG_ERROR([--with-ssl-incl=PATH set without --with-ssl=PATH]);;
+dnl esac
 ],
 [with_ssl_incl=$with_ssl]) #default
 
@@ -197,8 +204,8 @@ done
 SSL_DYNAMIC_ONLY=$enable_dynamic_ssl
 SSL_STATIC_ONLY=no
 
-case "$erl_xcomp_without_sysroot-$with_ssl" in
-  yes-* | no-no)
+case "$erl_xcomp_without_sysroot-$with_ssl-$with_ssl_lib" in
+  yes-* | no-no-*)
     SSL_APP=
     CRYPTO_APP=
     SSH_APP=
@@ -211,7 +218,7 @@ case "$erl_xcomp_without_sysroot-$with_ssl" in
         echo "$skip" > $ERL_TOP/lib/$a/SKIP
     done
     ;;
-  no-yes | no- )
+  no-yes- | no-- )
     # On windows, we could try to find the installation
     # of Shining Light OpenSSL, which can be found by poking in
     # the uninstall section in the registry, it's worth a try...
@@ -473,6 +480,43 @@ dnl		so it is - be adoptable
            echo "No usable OpenSSL found" > $ERL_TOP/lib/$a/SKIP
        done
     fi
+    ;;
+  *-yes-*)
+    # Non-standard library specified by PATH
+    if test ! -f "$with_ssl_lib" ; then
+       AC_MSG_ERROR(Invalid path to option --with-ssl-lib=PATH)
+    fi
+    case $with_ssl_incl in
+      yes|"")
+        with_ssl_incl=""
+        SSL_INCDIR=""
+        ;;
+      *)
+        if ! -d "$with_ssl_incl" ; then
+          AC_MSG_ERROR(Invalid path to option --with-ssl-incl=PATH)
+        fi
+        SSL_INCDIR="$with_ssl_incl"
+        ;;
+    esac
+
+    libname_with_ext=${with_ssl_lib##*lib}
+    SSL_LIBDIR=$(dirname $with_ssl_lib)
+    SSL_CRYPTO_LIBNAME=${libname_with_ext%%.*}
+    SSL_SSL_LIBNAME=$SSL_CRYPTO_LIBNAME
+    dnl TODO: Add support for .so library ?
+    if test -f "${SSL_LIBDIR}/lib${SSL_CRYPTO_LIBNAME}.a"; then
+      SSL_STATIC_ONLY=yes
+    else
+      AC_MSG_ERROR(--with-ssl-lib not supported with dynamic linking)
+    fi
+    if test ! x"$with_ssl_incl" = x ; then
+      SSL_INCLUDE="-I$with_ssl_incl/include"
+    fi
+    SSL_APP=ssl
+    CRYPTO_APP=crypto
+    SSH_APP=ssh
+
+    dnl TODO: Add a check for the lib actually having OpenSSL symbols ?
     ;;
   *)
     # Option given with PATH to package
