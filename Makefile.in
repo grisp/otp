@@ -389,10 +389,18 @@ endif
 
 .PHONY: build_erl_interface
 
+ifeq ($(findstring rtems,$(TARGET)),rtems)
+build_erl_interface:
+	echo "Don't build erl_interface on RTEMS"
+
+else
 build_erl_interface:
 	$(make_verbose)cd lib/erl_interface && \
 	  ERL_TOP=$(ERL_TOP) PATH=$(BOOT_PREFIX)"$${PATH}" \
 		$(MAKE) $(TYPE)
+
+endif
+
 #
 # Use these targets when you want to use the erl and erlc
 # binaries in your PATH instead of those created from the
