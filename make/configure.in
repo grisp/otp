@@ -412,7 +412,7 @@ if test $CROSS_COMPILING = no; then
 	   	AC_MSG_ERROR([Unexpected MacOSX version ($macosx_version) returned by 'sw_vers -productVersion'; this configure script probably needs to be updated])
 	   }
 	   AC_TRY_COMPILE([
-#if __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ > $int_macosx_version
+#if __ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ > $int_macosx_version && false
 #error Compiling for a newer MacOSX version...
 #endif
 		], [;],
