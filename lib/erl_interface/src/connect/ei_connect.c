@@ -2023,7 +2023,7 @@ static unsigned int gen_challenge(void)
     uname(&s.name);
     s.cpu  = clock();
     s.pid  = getpid();
-#if defined(__ANDROID__) || defined(__HAIKU__)
+#if defined(__ANDROID__) || defined(__HAIKU__) || defined(__rtems__)
     s.hid  = 0;
 #else
     s.hid  = gethostid();
