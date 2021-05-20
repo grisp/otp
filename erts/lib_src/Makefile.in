@@ -39,6 +39,7 @@ INSTALL=@INSTALL@
 INSTALL_DIR=@INSTALL_DIR@
 INSTALL_DATA=@INSTALL_DATA@
 INSTALL_PROGRAM=@INSTALL_PROGRAM@
+CROSS_COMPILING = @CROSS_COMPILING@
 
 ERLANG_OSTYPE=@ERLANG_OSTYPE@
 
@@ -313,7 +314,13 @@ YCF_SOURCE_DIR=$(ERL_TOP)/erts/lib_src/yielding_c_fun
 
 include $(YCF_SOURCE_DIR)/main_target.mk
 
+ifeq ($(CROSS_COMPILING),no)
+# TODO: Move this to a proper flag in erts/configure.in
+#       (erl_xcomp_build_ycf=true|false)
 $(OBJ_DIR)/MADE: $(YCF_EXECUTABLE) $(ETHREAD_LIB) $(ERTS_INTERNAL_LIBS)
+else
+$(OBJ_DIR)/MADE: $(ETHREAD_LIB) $(ERTS_INTERNAL_LIBS)
+endif
 	$(gen_verbose)
 	$(V_at)echo $? > $(OBJ_DIR)/MADE
 
@@ -454,7 +461,11 @@ INTERNAL_RELEASE_LIBS= \
 
 .PHONY: release_spec
 release_spec: all
+ifeq ($(CROSS_COMPILING),no)
+# TODO: Move this to a proper flag in erts/configure.in
+#       (erl_xcomp_build_ycf=true|false)
 	$(INSTALL_PROGRAM) $(YCF_EXECUTABLE) "$(RELSYSDIR)/bin"
+endif
 ifneq ($(strip $(RELEASE_INCLUDES)),)
 	$(INSTALL_DIR) "$(RELSYSDIR)/include"
 	$(INSTALL_DIR) "$(RELEASE_PATH)/usr/include"
