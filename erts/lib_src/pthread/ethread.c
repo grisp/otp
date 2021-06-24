@@ -152,7 +152,6 @@ ppc_init__(void)
     ethr_runtime__.conf.have_lwsync = 0;
 
 #ifndef __rtems__
-
     /*
      * We perform the lwsync test (which might cause an illegal
      * instruction signal) in a separate process in order to be
@@ -185,7 +184,7 @@ ppc_init__(void)
 	}
     }
 #endif
-    
+
     return 0;
 }
 
