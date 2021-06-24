@@ -113,7 +113,7 @@ docs:
 include $(ERL_TOP)/make/otp_release_targets.mk
 
 ifeq ($(findstring rtems,$(TARGET)),rtems)
-release_spec: 
+release_spec:
 else
 release_spec: opt
 	$(INSTALL_DIR) "$(RELSYSDIR)/priv/lib"
