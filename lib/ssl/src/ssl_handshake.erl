@@ -2109,6 +2109,12 @@ digitally_signed(Version, Msg, HashAlgo, PrivateKey, SignAlgo) ->
 	    throw(?ALERT_REC(?FATAL, ?HANDSHAKE_FAILURE, bad_key(PrivateKey)))
     end.
 
+%% HACK: allow callbacks for signing using the GRiSP Secure Element
+%% We only care here for sha256 + ecdsa for TLS 1.2 and 1.3 (SSL 3.3 and 3.4)
+do_digitally_signed({3, 4}, Msg, sha256, #{algorithm := ecdsa, sign_fun := {Mod, Fun}}, ecdsa) ->
+    Mod:Fun(Msg);
+do_digitally_signed({3, 3}, Hash, sha256, #{algorithm := ecdsa, sign_fun := {Mod, Fun}}, ecdsa) ->
+    Mod:Fun({digest, Hash});
 do_digitally_signed({3, Minor}, Msg, HashAlgo, {#'RSAPrivateKey'{} = Key,
                                                  #'RSASSA-PSS-params'{}}, SignAlgo) when Minor >= 3 ->
     Options = signature_options(SignAlgo, HashAlgo),
