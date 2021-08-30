@@ -24,7 +24,7 @@
 
 -include("ssl_internal.hrl").
 -include("ssl_connection.hrl").
--include_lib("public_key/include/public_key.hrl"). 
+-include_lib("public_key/include/public_key.hrl").
 
 -define(DEFAULT_MAX_SESSION_CACHE, 1000).
 
@@ -87,6 +87,9 @@ group_pairs([#{private_key := #'DSAPrivateKey'{}} = Pair | Rest], #{dsa := DSA} 
 group_pairs([#{private_key := #{algorithm := dss, engine := _}} = Pair | Rest], Group) ->
     Pairs = maps:get(dsa, Group),
     group_pairs(Rest, Group#{dsa => [Pair | Pairs]});
+group_pairs([#{private_key := #{algorithm := Alg, sign_fun := _}} = Pair | Rest], Group) ->
+    Pairs = maps:get(Alg, Group),
+    group_pairs(Rest, Group#{Alg => [Pair | Pairs]});
 group_pairs([#{private_key := #{algorithm := Alg, engine := _}} = Pair | Rest], Group) ->
     Pairs = maps:get(Alg, Group),
     group_pairs(Rest, Group#{Alg => [Pair | Pairs]});
@@ -219,8 +222,8 @@ get_internal_active_n(false) ->
     end.
 
 %%====================================================================
-%% Internal functions 
-%%====================================================================	     
+%% Internal functions
+%%====================================================================
 init_manager_name(false) ->
     put(ssl_manager, ssl_manager:name(normal)),
     put(ssl_pem_cache, ssl_pem_cache:name(normal));
@@ -265,6 +268,9 @@ init_certificate_file(CertFile, PemCache, Role) ->
             file_error(CertFile, {certfile, Reason})
     end.
 
+%% HACK: allow callbacks for signing using the GRiSP Secure Element
+init_private_key(#{algorithm := ecdsa, sign_fun := _SignFun} = Key, _, _) ->
+    Key;
 init_private_key(#{algorithm := Alg} = Key, _, _PemCache)
   when Alg =:= ecdsa; Alg =:= rsa; Alg =:= dss ->
     case maps:is_key(engine, Key) andalso maps:is_key(key_id, Key) of
@@ -303,7 +309,7 @@ private_key(#'PrivateKeyInfo'{privateKeyAlgorithm =
 				 #'PrivateKeyInfo_privateKeyAlgorithm'{algorithm = ?'id-dsa'},
 			     privateKey = Key}) ->
     public_key:der_decode('DSAPrivateKey', iolist_to_binary(Key));
-private_key(#'PrivateKeyInfo'{privateKeyAlgorithm = 
+private_key(#'PrivateKeyInfo'{privateKeyAlgorithm =
                                   #'PrivateKeyInfo_privateKeyAlgorithm'{algorithm = ?'id-ecPublicKey',
                                                                         parameters =  {asn1_OPENTYPE, Parameters}},
                               privateKey = Key}) ->
@@ -350,7 +356,7 @@ dh_file(DbHandle, DHParamFile) ->
         end
     catch
         _:Reason ->
-            file_error(DHParamFile, {dhfile, Reason}) 
+            file_error(DHParamFile, {dhfile, Reason})
     end.
 
 session_cb_init_args(client) ->
