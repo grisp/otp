@@ -150,6 +150,9 @@ init_certificates(undefined, #{pem_cache := PemCache} = Config, CertFile, server
     end;
 init_certificates(OwnCerts, Config, _, _) ->
     {ok, Config#{own_certificates => OwnCerts}}.
+%% HACK: allow callbacks for signing using the GRiSP Secure Element
+init_private_key(_, #{algorithm := ecdsa, sign_fun := _SignFun} = Key, _, _, _) ->
+    Key;
 init_private_key(_, #{algorithm := Alg} = Key, _, _Password, _Client) when Alg == ecdsa;
                                                                            Alg == rsa;
                                                                            Alg == dss ->
