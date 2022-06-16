@@ -14000,6 +14000,11 @@ int on_load(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info)
 
     // ESOCK_EPRINTF("\r\n[ESOCK] init IOV max\r\n");
     data.iov_max =
+#if defined(__rtems__)
+        /* sysconf should be working on RTEMS, but for some unknown reasons
+           it returns -1 for _SC_IOV_MAX, so we hardcode the value for now */
+        1024
+#else
 #if defined(NO_SYSCONF) || (! defined(_SC_IOV_MAX))
 #   ifdef IOV_MAX
         IOV_MAX
@@ -14008,6 +14013,7 @@ int on_load(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info)
 #   endif
 #else
         sysconf(_SC_IOV_MAX)
+#endif
 #endif
         ;
     ESOCK_ASSERT( data.iov_max > 0 );
