@@ -27,7 +27,11 @@ include $(ERL_TOP)/make/$(TARGET)/otp.mk
 # ----------------------------------------------------------------------
 
 # Other erts dirs than the emulator dir...
+ifeq ($(findstring rtems, $(TARGET)), rtems)
+ERTSDIRS = etc lib_src
+else
 ERTSDIRS = etc epmd lib_src
+endif
 XINSTDIRS = preloaded
 ifeq ($(NO_START_SCRIPTS),)
 ERTSDIRS += start_scripts
