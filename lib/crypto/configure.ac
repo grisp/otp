@@ -72,6 +72,8 @@ fi
 dnl
 dnl SSL, SSH and CRYPTO need the OpenSSL libraries
 dnl
+dnl TODO: Update comments
+dnl
 dnl Check flags --with-ssl, --without-ssl --with-ssl=PATH.
 dnl If no option is given or --with-ssl is set without a path then we
 dnl search for OpenSSL libraries and header files in the standard locations. 
@@ -115,6 +117,10 @@ case "$with_ssl_lib_subdir" in
 esac
 ],
 [with_ssl_lib_subdir=]) #default
+
+dnl TODO: Add checks regarding conflicts between --with-ssl and --with-ssl-lib
+AC_ARG_WITH(ssl-lib,
+AS_HELP_STRING([--with-ssl-lib=PATH], [location of the library containing OpenSSL, if not standard]))
 
 AC_ARG_WITH(ssl-incl,
 AS_HELP_STRING([--with-ssl-incl=PATH],
@@ -270,7 +276,13 @@ yes
 
     CPPFLAGS="$save_CPPFLAGS"
 
-    AS_IF([test $valid_include != yes],
+    AS_IF([test -f "$with_ssl_lib"],
+          [
+              found_dynlib=no
+              found_static_lib=yes
+              static_ext=.a
+          ],
+          [test $valid_include != yes],
           [
               # Not a valid include...
               static_crypto_lib_name=
@@ -462,8 +474,8 @@ case $enable_dynamic_ssl in
 	SSL_DYNAMIC_ONLY=no;;
 esac
 
-AS_CASE(["$erl_xcomp_without_sysroot-$with_ssl"],
-        [yes-* | no-no],
+AS_CASE(["$erl_xcomp_without_sysroot-$with_ssl-$with_ssl_lib"],
+        [yes-* | no-no-*],
         [
             SSL_APP=
             CRYPTO_APP=
@@ -475,7 +487,7 @@ AS_CASE(["$erl_xcomp_without_sysroot-$with_ssl"],
                 echo "$skip" > $ERL_TOP/lib/$a/SKIP
                 done
         ],
-        [no-yes | no-],
+        [no-yes- | no--],
         [
             # We search for OpenSSL in the common OS standard locations.
             SSL_APP=ssl
@@ -586,6 +598,7 @@ AS_CASE(["$erl_xcomp_without_sysroot-$with_ssl"],
                          done
                   ])
         ],
+        [*-*-],
         [
             # Option given with PATH to package
             AS_IF([test ! -d "$with_ssl"],
@@ -646,6 +659,48 @@ AS_CASE(["$erl_xcomp_without_sysroot-$with_ssl"],
                   [
                       SSL_RUNTIME_LIBDIR="$SSL_LIBDIR"
                   ])
+        ],
+        [
+            # Non-standard library specified by PATH
+            if test ! -f "$with_ssl_lib" ; then
+                AC_MSG_ERROR(Invalid path to option --with-ssl-lib=PATH)
+            fi
+
+            SSL_APP=ssl
+            CRYPTO_APP=crypto
+            SSH_APP=ssh
+
+            if test -d "$with_ssl_incl" ; then
+                if test ! -f "$with_ssl_incl/include/openssl/opensslv.h"; then
+                    AC_MSG_ERROR("$with_ssl_incl/include/openssl/opensslv.h not found")
+                fi
+                SSL_INCDIR="$with_ssl_incl"
+                SSL_INCLUDE="-I$SSL_INCDIR/include"
+                ERL_CRYPTO_CHECK_LIB(["$with_ssl_incl"], [""], ["$with_ssl"])
+              else
+                if test ! -f "$erl_xcomp_isysroot$rdir/include/openssl/opensslv.h"; then
+                    AC_MSG_ERROR("$erl_xcomp_isysroot$rdir/include/openssl/opensslv.h not found")
+                fi
+                SSL_INCDIR="$erl_xcomp_isysroot$rdir"
+                SSL_INCLUDE="-I$SSL_INCDIR/include"
+                ERL_CRYPTO_CHECK_LIB(["$SSL_INCDIR"], ["$erl_xcomp_sysroot"], ["$rdir"])
+            fi
+
+            libname_with_ext=${with_ssl_lib##*lib}
+            libname_without_ext=${libname_with_ext%%.*}
+
+            SSL_CRYPTO_LIBNAME=$static_crypto_lib_name
+            SSL_SSL_LIBNAME=$libname_without_ext
+            SSL_LIBDIR=$(dirname $with_ssl_lib)
+            SSL_EXTRA_LIBS="$static_extra_libs"
+            SSL_RUNTIME_LIBDIR=
+            SSL_DYNAMIC_ONLY=no
+
+            if test ! -f "${SSL_LIBDIR}/lib${SSL_SSL_LIBNAME}.a"; then
+              AC_MSG_ERROR(--with-ssl-lib not supported with dynamic linking)
+            fi
+
+            dnl TODO: Add a check for the lib actually having OpenSSL symbols ?
         ])dnl AS_CASE
 
 SSL_DED_LD_RUNTIME_LIBRARY_PATH=

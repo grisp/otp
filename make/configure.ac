@@ -254,6 +254,10 @@ AS_HELP_STRING([--with-ssl=PATH], [base location of OpenSSL include and lib dire
 AS_HELP_STRING([--with-ssl], [use SSL (default)])
 AS_HELP_STRING([--without-ssl], [don't use SSL]))
 
+AC_ARG_WITH(ssl-lib,
+AS_HELP_STRING([--with-ssl-lib=PATH],
+               [location of the library containing OpenSSL, if not standard]))
+
 AC_ARG_WITH(ssl-incl,
 AS_HELP_STRING([--with-ssl-incl=PATH],
 	       [base location of OpenSSL include directory (if different than base location specified by --with-ssl=PATH)]))
