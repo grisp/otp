@@ -782,6 +782,7 @@ with_javac
 enable_megaco_flex_scanner_lineno
 enable_megaco_reentrant_flex_scanner
 with_ssl
+with_ssl_lib
 with_ssl_incl
 with_ssl_zlib
 with_ssl_lib_subdir
@@ -1515,6 +1516,8 @@ Optional Packages:
   --with-ssl=PATH         base location of OpenSSL include and lib directories
   --with-ssl              use SSL (default)
   --without-ssl           don't use SSL
+  --with-ssl-lib=PATH     location of the library containing OpenSSL, if not
+                          standard
   --with-ssl-incl=PATH    base location of OpenSSL include directory (if
                           different than base location specified by
                           --with-ssl=PATH)
@@ -5612,6 +5615,14 @@ fi
 if test ${with_ssl+y}
 then :
   withval=$with_ssl;
+fi
+
+
+
+# Check whether --with-ssl-lib was given.
+if test ${with_ssl_lib+y}
+then :
+  withval=$with_ssl_lib;
 fi
 
 
