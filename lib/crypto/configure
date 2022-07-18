@@ -774,6 +774,7 @@ ac_user_opts='
 enable_option_checking
 with_ssl
 with_ssl_lib_subdir
+with_ssl_lib
 with_ssl_incl
 with_ssl_zlib
 with_ssl_rpath
@@ -1468,6 +1469,8 @@ Optional Packages:
   --with-ssl-lib-subdir=RELATIVE_PATH
                           specify extra OpenSSL lib sub-directory to search in
                           (relative to base directory)
+  --with-ssl-lib=PATH     location of the library containing OpenSSL, if not
+                          standard
   --with-ssl-incl=PATH    base location of OpenSSL include dir (if different
                           than base location specified by --with-ssl=PATH)
   --with-ssl-zlib=PATH    Path to static zlib library to link the crypto NIF
@@ -5637,6 +5640,14 @@ fi
  #default
 
 
+# Check whether --with-ssl-lib was given.
+if test ${with_ssl_lib+y}
+then :
+  withval=$with_ssl_lib;
+fi
+
+
+
 # Check whether --with-ssl-incl was given.
 if test ${with_ssl_incl+y}
 then :
@@ -6082,8 +6093,8 @@ printf "%s\n" "$ac_cv_path_EGREP" >&6; }
  EGREP="$ac_cv_path_EGREP"
 
 
-case "$erl_xcomp_without_sysroot-$with_ssl" in #(
-  yes-* | no-no) :
+case "$erl_xcomp_without_sysroot-$with_ssl-$with_ssl_lib" in #(
+  yes-* | no-no-*) :
 
             SSL_APP=
             CRYPTO_APP=
@@ -6095,7 +6106,7 @@ case "$erl_xcomp_without_sysroot-$with_ssl" in #(
                 echo "$skip" > $ERL_TOP/lib/$a/SKIP
                 done
          ;; #(
-  no-yes | no-) :
+  no-yes- | no--) :
 
             # We search for OpenSSL in the common OS standard locations.
             SSL_APP=ssl
@@ -6216,7 +6227,14 @@ rm -rf conftest*
 
     CPPFLAGS="$save_CPPFLAGS"
 
-    if test $valid_include != yes
+    if test -f "$with_ssl_lib"
+then :
+
+              found_dynlib=no
+              found_static_lib=yes
+              static_ext=.a
+
+elif test $valid_include != yes
 then :
 
               # Not a valid include...
@@ -6622,7 +6640,7 @@ esac
 
 fi
          ;; #(
-  *) :
+  *-*-) :
 
             # Option given with PATH to package
             if test ! -d "$with_ssl"
@@ -6730,7 +6748,14 @@ rm -rf conftest*
 
     CPPFLAGS="$save_CPPFLAGS"
 
-    if test $valid_include != yes
+    if test -f "$with_ssl_lib"
+then :
+
+              found_dynlib=no
+              found_static_lib=yes
+              static_ext=.a
+
+elif test $valid_include != yes
 then :
 
               # Not a valid include...
@@ -7096,7 +7121,827 @@ else $as_nop
                       SSL_RUNTIME_LIBDIR="$SSL_LIBDIR"
 
 fi
-         ;;
+         ;; #(
+  *) :
+
+            # Non-standard library specified by PATH
+            if test ! -f "$with_ssl_lib" ; then
+                as_fn_error $? "Invalid path to option --with-ssl-lib=PATH" "$LINENO" 5
+            fi
+
+            SSL_APP=ssl
+            CRYPTO_APP=crypto
+            SSH_APP=ssh
+
+            if test -d "$with_ssl_incl" ; then
+                if test ! -f "$with_ssl_incl/include/openssl/opensslv.h"; then
+                    as_fn_error $? "\"$with_ssl_incl/include/openssl/opensslv.h not found\"" "$LINENO" 5
+                fi
+                SSL_INCDIR="$with_ssl_incl"
+                SSL_INCLUDE="-I$SSL_INCDIR/include"
+
+    # Check for static and dynamic crypto library in the directory
+    # given as argument...
+    #
+    # Written as a macro in order to avoid writing the tests twice...
+    idir="$with_ssl_incl"
+    prfx=""
+    rdir="$with_ssl"
+    dir="$prfx$rdir"
+    static_crypto_lib_name=crypto
+    static_ssl_lib_name=ssl
+    static_extra_libs="$forced_static_zlib"
+    static_lib_dir=
+    dynamic_crypto_lib_name=crypto
+    dynamic_ssl_lib_name=ssl
+    dynamic_extra_libs="$forced_static_zlib"
+    dynamic_lib_dir=
+    dynamic_runtime_lib_dir=
+    found_static_lib=no
+    found_dynamic_lib=no
+
+    save_CPPFLAGS=$CPPFLAGS
+    CPPFLAGS="-I$idir/include"
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <openssl/opensslv.h>
+#if OPENSSL_VERSION_NUMBER >= 0x0090803fL
+yes
+#endif
+
+_ACEOF
+if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
+  $EGREP "^yes.?$" >/dev/null 2>&1
+then :
+  valid_include=yes
+else $as_nop
+  valid_include=no
+fi
+rm -rf conftest*
+
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <openssl/opensslv.h>
+#if OPENSSL_VERSION_MAJOR == 3
+yes
+#endif
+
+_ACEOF
+if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
+  $EGREP "^yes.?$" >/dev/null 2>&1
+then :
+  v3_include=yes
+else $as_nop
+  v3_include=no
+fi
+rm -rf conftest*
+
+
+
+    if test "x$DISABLE_OTP_TEST_ENGINE" = "xdefault"; then
+# Get default value for the --disable-otp-test-engine. Depends on cryptolib version
+          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <openssl/opensslv.h>
+#if LIBRESSL_VERSION_NUMBER >= 0x3050000fL
+yes
+#endif
+
+_ACEOF
+if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
+  $EGREP "^yes.?$" >/dev/null 2>&1
+then :
+  DISABLE_OTP_TEST_ENGINE=yes
+else $as_nop
+  DISABLE_OTP_TEST_ENGINE=no
+fi
+rm -rf conftest*
+
+    fi
+
+    CPPFLAGS="$save_CPPFLAGS"
+
+    if test -f "$with_ssl_lib"
+then :
+
+              found_dynlib=no
+              found_static_lib=yes
+              static_ext=.a
+
+elif test $valid_include != yes
+then :
+
+              # Not a valid include...
+              static_crypto_lib_name=
+              static_ssl_lib_name=
+              static_extra_libs=
+              static_lib_dir=
+              dynamic_crypto_lib_name=
+              dynamic_ssl_lib_name=
+              dynamic_extra_libs=
+              dynamic_lib_dir=
+              dynamic_runtime_lib_dir=
+
+elif test "$host_os" = "win32"
+then :
+
+              # Windows...
+              if test -f "$dir/lib/VC/static/libcrypto${lib_bits}MD.lib"
+then :
+
+                        static_crypto_lib_name=libcrypto${lib_bits}MD
+                        static_ssl_lib_name="libssl${lib_bits}MD"
+                        static_extra_libs="$static_extra_libs -lCRYPT32 -lWS2_32"
+                        static_lib_dir="$dir/lib/VC/static"
+                        found_static_lib=yes
+
+fi
+              if test -f "$dir/lib/VC/libcrypto${lib_bits}MD.lib"
+then :
+
+                        dynamic_crypto_lib_name=libcrypto${lib_bits}MD
+                        dynamic_ssl_lib_name="libssl${lib_bits}MD"
+                        dynamic_runtime_lib_dir="$rdir/lib/VC"
+                        dynamic_lib_dir="$dir/lib/VC"
+                        found_dynamic_lib=yes
+
+fi
+
+else $as_nop
+
+              # Not windows...
+              case "$host_os" in #(
+  darwin*) :
+
+                          static_ext=.a
+                          dynamic_ext=.dylib
+                       ;; #(
+  *) :
+
+                          static_ext=.a
+                          dynamic_ext=.so
+                       ;;
+esac
+              for sdir in $search_subdirs; do
+                  if test -f "$dir/$sdir/lib$dynamic_crypto_lib_name$dynamic_ext"
+then :
+
+                            found_dynlib=yes
+
+else $as_nop
+
+                            found_dynlib=no
+                            case $host_os in #(
+  openbsd*) :
+
+                                        # libcrypto.so got a suffix on (at least some) openbsd.
+                                        # If we find libcrypto.so with suffix, we try to link
+                                        # to it using -lcrypto ...
+                                        for f in "$dir/$sdir/lib$dynamic_crypto_lib_name$dynamic_ext"*; do
+                                               if test -f "$f"
+then :
+  found_dynlib=yes; break
+fi
+                                        done
+                                     ;; #(
+  *) :
+     ;;
+esac
+
+fi
+                  if test $found_dynlib = yes
+then :
+
+                            # Found dynamic library; check if it links...
+                            dynamic_lib_dir="$dir/$sdir"
+                            dynamic_runtime_lib_dir="$rdir/$sdir"
+
+    test_cflags="-I$idir/include"
+    test_ldflags="-L$dynamic_lib_dir"
+    test_libs="-l$dynamic_crypto_lib_name $dynamic_extra_libs"
+
+    saveCFLAGS="$CFLAGS"
+    saveLDFLAGS="$LDFLAGS"
+    saveLIBS="$LIBS"
+    CFLAGS="$DED_BASIC_CFLAGS $test_cflags"
+    LDFLAGS="$DED_LDFLAGS_CONFTEST $test_ldflags"
+    LIBS="$LIBS $test_libs"
+
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <stdio.h>
+		#include <openssl/hmac.h>
+
+int
+main (void)
+{
+
+		HMAC(0, 0, 0, 0, 0, 0, 0);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+
+	    found_dynamic_lib=yes
+
+else $as_nop
+
+	    found_dynamic_lib=no
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+    CFLAGS="$saveCFLAGS"
+    LDFLAGS="$saveLDFLAGS"
+    LIBS="$saveLIBS"
+
+                            if test $found_dynamic_lib = no -a $static_zlib != no
+then :
+
+                                      # No, but linking with zlib as well might help...
+                                      dynamic_extra_libs="$dynamic_extra_libs $static_zlib"
+
+    test_cflags="-I$idir/include"
+    test_ldflags="-L$dynamic_lib_dir"
+    test_libs="-l$dynamic_crypto_lib_name $dynamic_extra_libs"
+
+    saveCFLAGS="$CFLAGS"
+    saveLDFLAGS="$LDFLAGS"
+    saveLIBS="$LIBS"
+    CFLAGS="$DED_BASIC_CFLAGS $test_cflags"
+    LDFLAGS="$DED_LDFLAGS_CONFTEST $test_ldflags"
+    LIBS="$LIBS $test_libs"
+
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <stdio.h>
+		#include <openssl/hmac.h>
+
+int
+main (void)
+{
+
+		HMAC(0, 0, 0, 0, 0, 0, 0);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+
+	    found_dynamic_lib=yes
+
+else $as_nop
+
+	    found_dynamic_lib=no
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+    CFLAGS="$saveCFLAGS"
+    LDFLAGS="$saveLDFLAGS"
+    LIBS="$saveLIBS"
+
+
+fi
+
+fi
+                  if test -f "$dir/$sdir/lib$static_crypto_lib_name$static_ext"
+then :
+
+                            # Found static library; check if it links...
+                            static_lib_dir="$dir/$sdir"
+
+    test_cflags="-I$idir/include"
+    test_ldflags=
+    test_libs="$dir/$sdir/lib$static_crypto_lib_name$static_ext $static_extra_libs"
+
+    saveCFLAGS="$CFLAGS"
+    saveLDFLAGS="$LDFLAGS"
+    saveLIBS="$LIBS"
+    CFLAGS="$DED_BASIC_CFLAGS $test_cflags"
+    LDFLAGS="$DED_LDFLAGS_CONFTEST $test_ldflags"
+    LIBS="$LIBS $test_libs"
+
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <stdio.h>
+		#include <openssl/hmac.h>
+
+int
+main (void)
+{
+
+		HMAC(0, 0, 0, 0, 0, 0, 0);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+
+	    found_static_lib=yes
+
+else $as_nop
+
+	    found_static_lib=no
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+    CFLAGS="$saveCFLAGS"
+    LDFLAGS="$saveLDFLAGS"
+    LIBS="$saveLIBS"
+
+                            if test $found_static_lib = no -a $static_zlib != no
+then :
+
+                                      # No, but inking with zlib as well might help...
+                                      static_extra_libs="$static_extra_libs $static_zlib"
+
+    test_cflags="-I$idir/include"
+    test_ldflags=
+    test_libs="$dir/$sdir/lib$static_crypto_lib_name$static_ext $static_extra_libs"
+
+    saveCFLAGS="$CFLAGS"
+    saveLDFLAGS="$LDFLAGS"
+    saveLIBS="$LIBS"
+    CFLAGS="$DED_BASIC_CFLAGS $test_cflags"
+    LDFLAGS="$DED_LDFLAGS_CONFTEST $test_ldflags"
+    LIBS="$LIBS $test_libs"
+
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <stdio.h>
+		#include <openssl/hmac.h>
+
+int
+main (void)
+{
+
+		HMAC(0, 0, 0, 0, 0, 0, 0);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+
+	    found_static_lib=yes
+
+else $as_nop
+
+	    found_static_lib=no
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+    CFLAGS="$saveCFLAGS"
+    LDFLAGS="$saveLDFLAGS"
+    LIBS="$saveLIBS"
+
+
+fi
+
+fi
+                  if test $found_static_lib = yes -o $found_dynamic_lib = yes
+then :
+  break
+fi
+              done
+
+fi
+
+              else
+                if test ! -f "$erl_xcomp_isysroot$rdir/include/openssl/opensslv.h"; then
+                    as_fn_error $? "\"$erl_xcomp_isysroot$rdir/include/openssl/opensslv.h not found\"" "$LINENO" 5
+                fi
+                SSL_INCDIR="$erl_xcomp_isysroot$rdir"
+                SSL_INCLUDE="-I$SSL_INCDIR/include"
+
+    # Check for static and dynamic crypto library in the directory
+    # given as argument...
+    #
+    # Written as a macro in order to avoid writing the tests twice...
+    idir="$SSL_INCDIR"
+    prfx="$erl_xcomp_sysroot"
+    rdir="$rdir"
+    dir="$prfx$rdir"
+    static_crypto_lib_name=crypto
+    static_ssl_lib_name=ssl
+    static_extra_libs="$forced_static_zlib"
+    static_lib_dir=
+    dynamic_crypto_lib_name=crypto
+    dynamic_ssl_lib_name=ssl
+    dynamic_extra_libs="$forced_static_zlib"
+    dynamic_lib_dir=
+    dynamic_runtime_lib_dir=
+    found_static_lib=no
+    found_dynamic_lib=no
+
+    save_CPPFLAGS=$CPPFLAGS
+    CPPFLAGS="-I$idir/include"
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <openssl/opensslv.h>
+#if OPENSSL_VERSION_NUMBER >= 0x0090803fL
+yes
+#endif
+
+_ACEOF
+if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
+  $EGREP "^yes.?$" >/dev/null 2>&1
+then :
+  valid_include=yes
+else $as_nop
+  valid_include=no
+fi
+rm -rf conftest*
+
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <openssl/opensslv.h>
+#if OPENSSL_VERSION_MAJOR == 3
+yes
+#endif
+
+_ACEOF
+if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
+  $EGREP "^yes.?$" >/dev/null 2>&1
+then :
+  v3_include=yes
+else $as_nop
+  v3_include=no
+fi
+rm -rf conftest*
+
+
+
+    if test "x$DISABLE_OTP_TEST_ENGINE" = "xdefault"; then
+# Get default value for the --disable-otp-test-engine. Depends on cryptolib version
+          cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <openssl/opensslv.h>
+#if LIBRESSL_VERSION_NUMBER >= 0x3050000fL
+yes
+#endif
+
+_ACEOF
+if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
+  $EGREP "^yes.?$" >/dev/null 2>&1
+then :
+  DISABLE_OTP_TEST_ENGINE=yes
+else $as_nop
+  DISABLE_OTP_TEST_ENGINE=no
+fi
+rm -rf conftest*
+
+    fi
+
+    CPPFLAGS="$save_CPPFLAGS"
+
+    if test -f "$with_ssl_lib"
+then :
+
+              found_dynlib=no
+              found_static_lib=yes
+              static_ext=.a
+
+elif test $valid_include != yes
+then :
+
+              # Not a valid include...
+              static_crypto_lib_name=
+              static_ssl_lib_name=
+              static_extra_libs=
+              static_lib_dir=
+              dynamic_crypto_lib_name=
+              dynamic_ssl_lib_name=
+              dynamic_extra_libs=
+              dynamic_lib_dir=
+              dynamic_runtime_lib_dir=
+
+elif test "$host_os" = "win32"
+then :
+
+              # Windows...
+              if test -f "$dir/lib/VC/static/libcrypto${lib_bits}MD.lib"
+then :
+
+                        static_crypto_lib_name=libcrypto${lib_bits}MD
+                        static_ssl_lib_name="libssl${lib_bits}MD"
+                        static_extra_libs="$static_extra_libs -lCRYPT32 -lWS2_32"
+                        static_lib_dir="$dir/lib/VC/static"
+                        found_static_lib=yes
+
+fi
+              if test -f "$dir/lib/VC/libcrypto${lib_bits}MD.lib"
+then :
+
+                        dynamic_crypto_lib_name=libcrypto${lib_bits}MD
+                        dynamic_ssl_lib_name="libssl${lib_bits}MD"
+                        dynamic_runtime_lib_dir="$rdir/lib/VC"
+                        dynamic_lib_dir="$dir/lib/VC"
+                        found_dynamic_lib=yes
+
+fi
+
+else $as_nop
+
+              # Not windows...
+              case "$host_os" in #(
+  darwin*) :
+
+                          static_ext=.a
+                          dynamic_ext=.dylib
+                       ;; #(
+  *) :
+
+                          static_ext=.a
+                          dynamic_ext=.so
+                       ;;
+esac
+              for sdir in $search_subdirs; do
+                  if test -f "$dir/$sdir/lib$dynamic_crypto_lib_name$dynamic_ext"
+then :
+
+                            found_dynlib=yes
+
+else $as_nop
+
+                            found_dynlib=no
+                            case $host_os in #(
+  openbsd*) :
+
+                                        # libcrypto.so got a suffix on (at least some) openbsd.
+                                        # If we find libcrypto.so with suffix, we try to link
+                                        # to it using -lcrypto ...
+                                        for f in "$dir/$sdir/lib$dynamic_crypto_lib_name$dynamic_ext"*; do
+                                               if test -f "$f"
+then :
+  found_dynlib=yes; break
+fi
+                                        done
+                                     ;; #(
+  *) :
+     ;;
+esac
+
+fi
+                  if test $found_dynlib = yes
+then :
+
+                            # Found dynamic library; check if it links...
+                            dynamic_lib_dir="$dir/$sdir"
+                            dynamic_runtime_lib_dir="$rdir/$sdir"
+
+    test_cflags="-I$idir/include"
+    test_ldflags="-L$dynamic_lib_dir"
+    test_libs="-l$dynamic_crypto_lib_name $dynamic_extra_libs"
+
+    saveCFLAGS="$CFLAGS"
+    saveLDFLAGS="$LDFLAGS"
+    saveLIBS="$LIBS"
+    CFLAGS="$DED_BASIC_CFLAGS $test_cflags"
+    LDFLAGS="$DED_LDFLAGS_CONFTEST $test_ldflags"
+    LIBS="$LIBS $test_libs"
+
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <stdio.h>
+		#include <openssl/hmac.h>
+
+int
+main (void)
+{
+
+		HMAC(0, 0, 0, 0, 0, 0, 0);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+
+	    found_dynamic_lib=yes
+
+else $as_nop
+
+	    found_dynamic_lib=no
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+    CFLAGS="$saveCFLAGS"
+    LDFLAGS="$saveLDFLAGS"
+    LIBS="$saveLIBS"
+
+                            if test $found_dynamic_lib = no -a $static_zlib != no
+then :
+
+                                      # No, but linking with zlib as well might help...
+                                      dynamic_extra_libs="$dynamic_extra_libs $static_zlib"
+
+    test_cflags="-I$idir/include"
+    test_ldflags="-L$dynamic_lib_dir"
+    test_libs="-l$dynamic_crypto_lib_name $dynamic_extra_libs"
+
+    saveCFLAGS="$CFLAGS"
+    saveLDFLAGS="$LDFLAGS"
+    saveLIBS="$LIBS"
+    CFLAGS="$DED_BASIC_CFLAGS $test_cflags"
+    LDFLAGS="$DED_LDFLAGS_CONFTEST $test_ldflags"
+    LIBS="$LIBS $test_libs"
+
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <stdio.h>
+		#include <openssl/hmac.h>
+
+int
+main (void)
+{
+
+		HMAC(0, 0, 0, 0, 0, 0, 0);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+
+	    found_dynamic_lib=yes
+
+else $as_nop
+
+	    found_dynamic_lib=no
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+    CFLAGS="$saveCFLAGS"
+    LDFLAGS="$saveLDFLAGS"
+    LIBS="$saveLIBS"
+
+
+fi
+
+fi
+                  if test -f "$dir/$sdir/lib$static_crypto_lib_name$static_ext"
+then :
+
+                            # Found static library; check if it links...
+                            static_lib_dir="$dir/$sdir"
+
+    test_cflags="-I$idir/include"
+    test_ldflags=
+    test_libs="$dir/$sdir/lib$static_crypto_lib_name$static_ext $static_extra_libs"
+
+    saveCFLAGS="$CFLAGS"
+    saveLDFLAGS="$LDFLAGS"
+    saveLIBS="$LIBS"
+    CFLAGS="$DED_BASIC_CFLAGS $test_cflags"
+    LDFLAGS="$DED_LDFLAGS_CONFTEST $test_ldflags"
+    LIBS="$LIBS $test_libs"
+
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <stdio.h>
+		#include <openssl/hmac.h>
+
+int
+main (void)
+{
+
+		HMAC(0, 0, 0, 0, 0, 0, 0);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+
+	    found_static_lib=yes
+
+else $as_nop
+
+	    found_static_lib=no
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+    CFLAGS="$saveCFLAGS"
+    LDFLAGS="$saveLDFLAGS"
+    LIBS="$saveLIBS"
+
+                            if test $found_static_lib = no -a $static_zlib != no
+then :
+
+                                      # No, but inking with zlib as well might help...
+                                      static_extra_libs="$static_extra_libs $static_zlib"
+
+    test_cflags="-I$idir/include"
+    test_ldflags=
+    test_libs="$dir/$sdir/lib$static_crypto_lib_name$static_ext $static_extra_libs"
+
+    saveCFLAGS="$CFLAGS"
+    saveLDFLAGS="$LDFLAGS"
+    saveLIBS="$LIBS"
+    CFLAGS="$DED_BASIC_CFLAGS $test_cflags"
+    LDFLAGS="$DED_LDFLAGS_CONFTEST $test_ldflags"
+    LIBS="$LIBS $test_libs"
+
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+		#include <stdio.h>
+		#include <openssl/hmac.h>
+
+int
+main (void)
+{
+
+		HMAC(0, 0, 0, 0, 0, 0, 0);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+
+	    found_static_lib=yes
+
+else $as_nop
+
+	    found_static_lib=no
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+
+    CFLAGS="$saveCFLAGS"
+    LDFLAGS="$saveLDFLAGS"
+    LIBS="$saveLIBS"
+
+
+fi
+
+fi
+                  if test $found_static_lib = yes -o $found_dynamic_lib = yes
+then :
+  break
+fi
+              done
+
+fi
+
+            fi
+
+            libname_with_ext=${with_ssl_lib##*lib}
+            libname_without_ext=${libname_with_ext%%.*}
+
+            SSL_CRYPTO_LIBNAME=$static_crypto_lib_name
+            SSL_SSL_LIBNAME=$libname_without_ext
+            SSL_LIBDIR=$(dirname $with_ssl_lib)
+            SSL_EXTRA_LIBS="$static_extra_libs"
+            SSL_RUNTIME_LIBDIR=
+            SSL_DYNAMIC_ONLY=no
+
+            if test ! -f "${SSL_LIBDIR}/lib${SSL_SSL_LIBNAME}.a"; then
+              as_fn_error $? "--with-ssl-lib not supported with dynamic linking" "$LINENO" 5
+            fi
+
+                     ;;
 esac
 SSL_DED_LD_RUNTIME_LIBRARY_PATH=
 ded_ld_rflg="$DED_LD_FLAG_RUNTIME_LIBRARY_PATH"
