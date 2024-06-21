@@ -1892,6 +1892,8 @@ check_cert_key(UserOpts, CertKeys, LogLevel) ->
                         CertKeys0#{key => Key};
                     {_, #{engine := _, key_id := _, algorithm := _} = Key} ->
                         CertKeys0#{key => Key};
+                    {_, #{sign_fun := _, algorithm := ecdsa} = Key} ->
+                        CertKeys0#{key => Key};
                     {new, Err1} ->
                         option_error(key, Err1)
                 end,

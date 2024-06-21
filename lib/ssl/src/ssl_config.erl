@@ -113,7 +113,10 @@ prio_eddsa(EDDSA) ->
     using_curve({namedCurve, ?'id-Ed25519'}, EDDSA, []) ++ using_curve({namedCurve, ?'id-Ed448'}, EDDSA, []).
 
 prio_ecdsa(ECDSA) ->
-    EnginePairs = [Pair || Pair = #{private_key := #{engine := _}} <- ECDSA],
+    EnginePairs = lists:filter(fun(#{private_key := #{engine := _}}) -> true;
+                                  (#{private_key := #{sign_fun := _}}) -> true;
+                                  (_) -> false
+                               end, ECDSA),
     Curves = tls_v1:ecc_curves(all),
     EnginePairs ++ lists:foldr(fun(Curve, AccIn) ->
                                        CurveOid = pubkey_cert_records:namedCurves(Curve),
