@@ -127,6 +127,9 @@ dnl TODO: Add checks regarding conflicts between --with-ssl and --with-ssl-lib
 AC_ARG_WITH(ssl-lib,
 AS_HELP_STRING([--with-ssl-lib=PATH], [location of the library containing OpenSSL, if not standard]))
 
+AC_ARG_WITH(crypto-lib,
+AS_HELP_STRING([--with-crypto-lib=PATH], [location of the library containing OpenSSL crypto, if not standard]))
+
 AC_ARG_WITH(ssl-incl,
 AS_HELP_STRING([--with-ssl-incl=PATH],
 	       [base location of OpenSSL include dir (if different than base location specified by --with-ssl=PATH)]),
@@ -727,6 +730,22 @@ AS_CASE(["$erl_xcomp_without_sysroot-$with_ssl-$with_ssl_lib"],
             dnl TODO: Add a check for the lib actually having OpenSSL symbols ?
         ])dnl AS_CASE
 
+AS_IF([test "x$with_crypto_lib" != "x"],
+      [
+          if test ! -f "$with_crypto_lib" ; then
+              AC_MSG_ERROR(Invalid path to option --with-crypto-lib=PATH)
+          fi
+          crypto_libdir=$(dirname $with_crypto_lib)
+          if test "x$SSL_LIBDIR" != "x" -a "$crypto_libdir" != "$SSL_LIBDIR"; then
+              AC_MSG_ERROR(--with-crypto-lib must be in the selected OpenSSL library directory)
+          fi
+          crypto_libname_with_ext=${with_crypto_lib##*lib}
+          crypto_libname_without_ext=${crypto_libname_with_ext%%.*}
+          SSL_CRYPTO_LIBNAME=$crypto_libname_without_ext
+          SSL_LIBDIR=$crypto_libdir
+          SSL_DYNAMIC_ONLY=no
+      ])
+
 SSL_DED_LD_RUNTIME_LIBRARY_PATH=
 ded_ld_rflg="$DED_LD_FLAG_RUNTIME_LIBRARY_PATH"
 
@@ -970,7 +989,7 @@ AS_IF([test $SSL_DYNAMIC_ONLY = yes],
           LIBS="$LIBS -l$SSL_CRYPTO_LIBNAME $SSL_EXTRA_LIBS"
       ],
       [
-          LDFLAGS="$DED_LDFLAGS_CONFTEST"
+          LDFLAGS="$saveLDFLAGS"
           AS_IF([test "$host_os" = "win32"],
                 [LIBS="$LIBS $SSL_LIBDIR/$SSL_CRYPTO_LIBNAME.lib $SSL_EXTRA_LIBS"],
                 [LIBS="$LIBS $SSL_LIBDIR/lib$SSL_CRYPTO_LIBNAME.a $SSL_EXTRA_LIBS"])

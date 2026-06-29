@@ -767,6 +767,7 @@ enable_security_hardening_flags
 with_ssl
 with_ssl_lib_subdir
 with_ssl_lib
+with_crypto_lib
 with_ssl_incl
 with_ssl_zlib
 with_ssl_rpath
@@ -1467,6 +1468,8 @@ Optional Packages:
                           (relative to base directory)
   --with-ssl-lib=PATH     location of the library containing OpenSSL, if not
                           standard
+  --with-crypto-lib=PATH  location of the library containing OpenSSL crypto,
+                          if not standard
   --with-ssl-incl=PATH    base location of OpenSSL include dir (if different
                           than base location specified by --with-ssl=PATH)
   --with-ssl-zlib=PATH    Path to static zlib library to link the crypto NIF
@@ -6980,6 +6983,13 @@ then :
 fi
 
 
+# Check whether --with-crypto-lib was given.
+if test ${with_crypto_lib+y}
+then :
+  withval=$with_crypto_lib;
+fi
+
+
 
 # Check whether --with-ssl-incl was given.
 if test ${with_ssl_incl+y}
@@ -9354,6 +9364,24 @@ fi
 
                      ;;
 esac
+
+if test "x$with_crypto_lib" != "x"
+then :
+
+          if test ! -f "$with_crypto_lib" ; then
+              as_fn_error $? "Invalid path to option --with-crypto-lib=PATH" "$LINENO" 5
+          fi
+          crypto_libdir=$(dirname $with_crypto_lib)
+          if test "x$SSL_LIBDIR" != "x" -a "$crypto_libdir" != "$SSL_LIBDIR"; then
+              as_fn_error $? "--with-crypto-lib must be in the selected OpenSSL library directory" "$LINENO" 5
+          fi
+          crypto_libname_with_ext=${with_crypto_lib##*lib}
+          crypto_libname_without_ext=${crypto_libname_with_ext%%.*}
+          SSL_CRYPTO_LIBNAME=$crypto_libname_without_ext
+          SSL_LIBDIR=$crypto_libdir
+          SSL_DYNAMIC_ONLY=no
+
+fi
 SSL_DED_LD_RUNTIME_LIBRARY_PATH=
 ded_ld_rflg="$DED_LD_FLAG_RUNTIME_LIBRARY_PATH"
 
@@ -9794,7 +9822,7 @@ then :
 
 else case e in #(
   e)
-          LDFLAGS="$DED_LDFLAGS_CONFTEST"
+          LDFLAGS="$saveLDFLAGS"
           if test "$host_os" = "win32"
 then :
   LIBS="$LIBS $SSL_LIBDIR/$SSL_CRYPTO_LIBNAME.lib $SSL_EXTRA_LIBS"
